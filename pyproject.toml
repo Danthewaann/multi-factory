@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "multi-factories"
+version = "0.1.0"
+description = ""
+authors = ["Danthewaann <danielcrblack@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+marshmallow = "^3.23.0"
+factory-boy = "^3.3.1"
+sqlalchemy = "^2.0.36"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
