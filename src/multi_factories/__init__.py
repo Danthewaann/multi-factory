@@ -7,10 +7,10 @@ from dataclasses import dataclass
 from enum import Enum
 from types import NoneType
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Generic,
+    Protocol,
     TypeGuard,
     TypeVar,
     get_args,
@@ -26,8 +26,9 @@ from factory.base import (
 )
 from marshmallow import ValidationError
 
-if TYPE_CHECKING:
-    from marshmallow import Schema
+
+class Schema(Protocol):
+    _domain_cls: type
 
 
 BaseT = TypeVar("BaseT")
@@ -289,9 +290,9 @@ class JSONToDomainFactory(
             if enum_type in cls._enum_conversion_map:
                 return cls._enum_conversion_map[enum_type](value)
 
-            # We use the lower case name for `value` by default if no conversion mapping
+            # Just use the name for `value` by default if no conversion mapping
             # was provided for `value`
-            return value.name.lower()
+            return value.name
 
         raise TypeError(f"Failed to JSON encode value : {value}")
 

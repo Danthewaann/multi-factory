@@ -11,6 +11,8 @@ marshmallow = "^3.23.0"
 factory-boy = "^3.3.1"
 sqlalchemy = "^2.0.36"
 
+[tool.pytest.ini_options]
+addopts = "-vvv -s"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.3.3"
