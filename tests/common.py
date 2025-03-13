@@ -18,7 +18,7 @@ class ParentDomain:
 
 
 def inject_factory_method(
-    factory: type[BaseFactory[Any, Any, Any]], batch: bool = False
+    factory: type[BaseFactory[Any]], batch: bool = False
 ) -> pytest.MarkDecorator:
     if batch:
         return pytest.mark.parametrize(

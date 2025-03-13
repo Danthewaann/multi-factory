@@ -9,5 +9,5 @@ class Schema(Protocol):
 
 BaseT = TypeVar("BaseT")
 DomainT = TypeVar("DomainT", bound="Any")
-SchemaT = TypeVar("SchemaT", bound="Schema | None")
+SchemaT = TypeVar("SchemaT", bound="Schema")
 EnumConversionMap = dict[type[Enum], Callable[[Enum], Any]]

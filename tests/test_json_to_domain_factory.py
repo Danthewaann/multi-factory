@@ -8,16 +8,8 @@ from multi_factory.utils import lazy_attribute
 from tests import common
 
 from marshmallow import Schema, fields, post_load
-from multi_factory import (
-    errors,
-    JSONToDomainFactory,
-    JSONToDomainFactoryResult,
-)
-from tests.common import (
-    ChildDomain,
-    ParentDomain,
-    inject_factory_method,
-)
+from multi_factory import errors, JSONToDomainFactory, JSONToDomainFactoryResult
+from tests.common import ChildDomain, ParentDomain, inject_factory_method
 
 
 @pytest.fixture

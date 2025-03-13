@@ -143,7 +143,8 @@ class JSONToDomainFactoryResult(Generic[DomainT]):
 
 
 class JSONToDomainFactory(
-    BaseFactory[JSONToDomainFactoryResult[DomainT], DomainT, SchemaT],
+    BaseFactory[JSONToDomainFactoryResult[DomainT]],
+    Generic[DomainT, SchemaT],
     metaclass=JSONToDomainFactoryMetaClass,
     abstract=True,
 ):

@@ -18,6 +18,6 @@ def lazy_attribute(
     return factory.LazyAttribute(lambda _: func(*args, **kwargs))
 
 
-def sub_factory(sub_factory: type[BaseFactory[Any, Any, Any]], **kwargs: Any) -> Any:
+def sub_factory(sub_factory: type[BaseFactory[Any]], **kwargs: Any) -> Any:
     """Convenience function that wraps `factory.SubFactory`."""
     return factory.SubFactory(sub_factory, **kwargs)

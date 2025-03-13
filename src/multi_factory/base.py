@@ -13,7 +13,7 @@ from multi_factory.meta import (
     resolve_attribute,
     validate_factory,
 )
-from multi_factory.types import BaseT, DomainT, SchemaT
+from multi_factory.types import BaseT
 from factory.base import FactoryMetaClass as _FactoryMetaClass
 
 
@@ -75,7 +75,7 @@ class FactoryMetaClass(_FactoryMetaClass):  # type: ignore[misc]
         return new_factory_cls  # type: ignore[no-any-return]
 
 
-class BaseFactory(_BaseFactory, Generic[BaseT, DomainT, SchemaT]):  # type: ignore[misc]
+class BaseFactory(_BaseFactory, Generic[BaseT]):  # type: ignore[misc]
     @classmethod
     def build(cls, **kwargs: Any) -> BaseT:
         try:
@@ -107,9 +107,7 @@ class BaseFactory(_BaseFactory, Generic[BaseT, DomainT, SchemaT]):  # type: igno
         return base
 
 
-class Factory(
-    BaseFactory[BaseT, None, None], metaclass=FactoryMetaClass, abstract=True
-):
+class Factory(BaseFactory[BaseT], metaclass=FactoryMetaClass, abstract=True):
     """Factory class for generating a single base model.
 
     Args:
