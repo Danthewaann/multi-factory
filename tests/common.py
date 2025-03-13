@@ -17,6 +17,13 @@ class ParentDomain:
     children: list[ChildDomain]
 
 
+@dataclass
+class ParentWithSingleChildDomain:
+    first_name: str
+    second_name: str
+    child: ChildDomain
+
+
 def inject_factory_method(
     factory: type[BaseFactory[Any]], batch: bool = False
 ) -> pytest.MarkDecorator:

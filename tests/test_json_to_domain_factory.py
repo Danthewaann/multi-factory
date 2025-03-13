@@ -4,12 +4,17 @@ from typing import Any, Callable
 
 import pytest
 
-from multi_factory.utils import lazy_attribute
+from multi_factory.utils import lazy_attribute, sub_factory
 from tests import common
 
 from marshmallow import Schema, fields, post_load
 from multi_factory import errors, JSONToDomainFactory, JSONToDomainFactoryResult
-from tests.common import ChildDomain, ParentDomain, inject_factory_method
+from tests.common import (
+    ChildDomain,
+    ParentDomain,
+    ParentWithSingleChildDomain,
+    inject_factory_method,
+)
 
 
 @pytest.fixture
@@ -44,6 +49,14 @@ class ParentSchema(BaseSchema):
     children = fields.Nested(ChildSchema, many=True)
 
 
+class ParentWithSingleChildSchema(BaseSchema):
+    _domain_cls = ParentWithSingleChildDomain
+
+    first_name = fields.String()
+    second_name = fields.String()
+    child = fields.Nested(ChildSchema)
+
+
 class ChildJSONToDomainFactory(JSONToDomainFactory[ChildDomain, ChildSchema]):
     first_name = "Billy"
     second_name = "Jim"
@@ -71,6 +84,47 @@ def test_json_to_domain_factory_batch(
 ) -> None:
     models = factory_method(size=1)
     assert models == [json_to_domain_factory_result]
+
+
+def test_json_to_domain_with_sub_factory(
+    parent_with_single_child_dict: dict[str, Any],
+    parent_with_single_child_domain: common.ParentDomain,
+) -> None:
+    class _SubFactory(JSONToDomainFactory[common.ChildDomain, ChildSchema]):
+        first_name = "Billy"
+        second_name = "Jim"
+
+    class _MainFactory(
+        JSONToDomainFactory[
+            common.ParentWithSingleChildDomain, ParentWithSingleChildSchema
+        ]
+    ):
+        first_name = "Jim"
+        second_name = "Jim"
+        child = sub_factory(_SubFactory)
+
+    assert _MainFactory() == JSONToDomainFactoryResult(
+        base=parent_with_single_child_dict,
+        json=parent_with_single_child_dict,
+        domain=parent_with_single_child_domain,
+    )
+
+
+def test_json_to_domain_with_list_of_sub_factories(
+    parent_dict: dict[str, Any], parent_domain: common.ParentDomain
+) -> None:
+    class _SubFactory(JSONToDomainFactory[common.ChildDomain, ChildSchema]):
+        first_name = "Billy"
+        second_name = "Jim"
+
+    class _MainFactory(JSONToDomainFactory[common.ParentDomain, ParentSchema]):
+        first_name = "Jim"
+        second_name = "Jim"
+        children = [_SubFactory.build().base]
+
+    assert _MainFactory() == JSONToDomainFactoryResult(
+        base=parent_dict, json=parent_dict, domain=parent_domain
+    )
 
 
 def test_json_to_domain_factory_excludes(
