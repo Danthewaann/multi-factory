@@ -7,9 +7,9 @@ import pytest
 from tests import common
 
 from marshmallow import fields
-from multi_factories import (
+from multi_factory import (
     Factory,
-    FactoryError,
+    errors,
     JSONToDomainFactory,
     JSONToDomainFactoryResult,
 )
@@ -49,7 +49,7 @@ def json_to_domain_factory_result(
 
 @inject_factory_method(common.ParentJSONToDomainFactory)
 def test_json_to_domain_factory(
-    factory_method: Callable,
+    factory_method: Callable[..., JSONToDomainFactoryResult[common.ParentDomain]],
     json_to_domain_factory_result: JSONToDomainFactoryResult[common.ParentDomain],
 ) -> None:
     model = factory_method()
@@ -57,14 +57,17 @@ def test_json_to_domain_factory(
 
 
 @inject_factory_method(common.ParentFactory)
-def test_factory(factory_method: Callable, parent_domain: common.ParentDomain) -> None:
+def test_factory(
+    factory_method: Callable[..., common.ParentDomain],
+    parent_domain: common.ParentDomain,
+) -> None:
     model = factory_method()
     assert model == parent_domain
 
 
 @inject_factory_method(common.ParentJSONToDomainFactory, batch=True)
 def test_json_to_domain_factory_batch(
-    factory_method: Callable,
+    factory_method: Callable[..., list[JSONToDomainFactoryResult[common.ParentDomain]]],
     json_to_domain_factory_result: JSONToDomainFactoryResult[common.ParentDomain],
 ) -> None:
     models = factory_method(size=1)
@@ -73,7 +76,8 @@ def test_json_to_domain_factory_batch(
 
 @inject_factory_method(common.ParentFactory, batch=True)
 def test_factory_batch(
-    factory_method: Callable, parent_domain: common.ParentDomain
+    factory_method: Callable[..., list[common.ParentDomain]],
+    parent_domain: common.ParentDomain,
 ) -> None:
     models = factory_method(size=1)
     assert models == [parent_domain]
@@ -311,7 +315,7 @@ def test_json_to_domain_factory_with_no_enum_conversion_map_defaults_to_name() -
 
 def test_raises_when_json_to_domain_factory_data_does_match_model() -> None:
     with pytest.raises(
-        FactoryError,
+        errors.FactoryError,
         match=r"Failed to define '_InvalidFactory' : Failed to create Model object : ChildDomain.__init__\(\) got an unexpected keyword argument 'other_name'",
     ):
         # `other_name` is not valid property for the `ChildDomain` base model
@@ -323,7 +327,7 @@ def test_raises_when_json_to_domain_factory_domain_type_does_not_match_schema_do
     None
 ):
     with pytest.raises(
-        FactoryError,
+        errors.FactoryError,
         match="Failed to define '_InvalidFactory' : Schema domain type 'ParentDomain' doesn't match provided domain type 'ChildDomain'",
     ):
         # `ChildSchema` is not the same as `ParentSchema._domain_cls`
@@ -336,7 +340,7 @@ def test_raises_when_json_to_domain_factory_domain_type_does_not_match_schema_do
 
 def test_raises_when_json_to_domain_factory_data_fails_schema_validation() -> None:
     with pytest.raises(
-        FactoryError,
+        errors.FactoryError,
         match=r"Failed to define '_InvalidFactory' : Schema failed to validate data : {'first_name': \['Missing data for required field.'\]}",
     ):
         # `first_name` is not defined on the factory, so schema validation will fail
@@ -357,7 +361,7 @@ def test_raises_when_json_to_domain_factory_data_does_not_match_domain() -> None
         second_name = fields.String()
 
     with pytest.raises(
-        FactoryError,
+        errors.FactoryError,
         match=r"Failed to define '_InvalidFactory' : Failed to create Domain object : .* got an unexpected keyword argument 'second_name'",
     ):
         # `second_name` is not defined on `_TempDomain`, so domain object creation will fail

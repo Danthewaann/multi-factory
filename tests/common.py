@@ -1,18 +1,19 @@
 from dataclasses import dataclass
-from typing import Any, TypeVar
+from typing import Any
 from marshmallow import Schema, fields, post_load
 import pytest
-from multi_factories import BaseFactory, Factory, JSONToDomainFactory, lazy_attribute
-
-
-T = TypeVar("T")
+from multi_factory import BaseFactory, Factory, JSONToDomainFactory, lazy_attribute
 
 
 class BaseSchema(Schema):
     _domain_cls: type
 
+    @classmethod
+    def domain_cls(cls) -> type:
+        return cls._domain_cls
+
     @post_load
-    def to_domain(self, incoming_data: dict, **kwargs: Any) -> Any:  # noqa: ARG002
+    def to_domain(self, incoming_data: dict[str, Any], **kwargs: Any) -> Any:
         return self._domain_cls(**incoming_data)
 
 
@@ -67,7 +68,7 @@ class ParentJSONToDomainFactory(JSONToDomainFactory[ParentDomain, ParentSchema])
 
 
 def inject_factory_method(
-    factory: type[BaseFactory], batch: bool = False
+    factory: type[BaseFactory[Any, Any, Any]], batch: bool = False
 ) -> pytest.MarkDecorator:
     if batch:
         return pytest.mark.parametrize(
