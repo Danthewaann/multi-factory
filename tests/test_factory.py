@@ -98,7 +98,7 @@ def test_factory_excludes_in_meta_inner_class_merges_with_superclass(
     assert _ExcludesDerivedFactory() == child_domain
 
 
-def test_raises_when_json_to_domain_factory_data_does_match_model() -> None:
+def test_raises_when_factory_data_does_match_model() -> None:
     with pytest.raises(
         errors.FactoryError,
         match=r"Failed to define '_InvalidFactory' : Failed to create Model object : ChildDomain.__init__\(\) got an unexpected keyword argument 'other_name'",
