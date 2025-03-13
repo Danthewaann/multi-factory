@@ -88,14 +88,14 @@ def inject_meta_and_excludes(
     attrs["Meta"] = meta
 
 
-def validate_factory(new_factory_cls: type[Any]) -> None:
+def validate_factory(new_factory_cls: type[Any]) -> Any:
     """Validate that `new_factory_cls` can be instantiated without any errors.
 
     Raises:
         FactoryError: if `new_factory_cls` fails to be instantiated
     """
     try:
-        new_factory_cls.build()
+        return new_factory_cls.build()
     except Exception as e:
         message = f"Failed to define '{new_factory_cls.__name__}' : "
         if isinstance(e, ModelCreationError):

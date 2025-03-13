@@ -3,10 +3,6 @@ from typing import Any, Callable, Protocol, TypeVar
 
 
 class Schema(Protocol):
-    @classmethod
-    def domain_cls(cls) -> type:
-        ...
-
     def load(self, *args: Any, **kwargs: Any) -> Any:
         ...
 

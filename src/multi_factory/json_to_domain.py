@@ -5,6 +5,7 @@ import json
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
+from types import NoneType
 from typing import (
     Any,
     Generic,
@@ -85,6 +86,7 @@ class JSONToDomainFactoryMetaClass(_FactoryMetaClass):  # type: ignore[misc]
         )
 
         # If the parent factory is abstract we must obtain `domain_cls` and `schema_cls` from the new factory class
+        domain_cls: type[Any] | type[None] = NoneType
         if base_meta and base_meta.abstract:
             _, domain_cls, schema_cls = get_generic_args(attrs=attrs)
             domain_cls = get_origin_cls(domain_cls)
@@ -93,12 +95,6 @@ class JSONToDomainFactoryMetaClass(_FactoryMetaClass):  # type: ignore[misc]
             if not has_domain_cls(domain_cls) or not has_schema_cls(schema_cls):
                 raise FactoryError(
                     f"Failed to define '{class_name}' : Must provide generic domain and schema types"
-                )
-
-            # Make sure that the `domain_cls` that `schema_cls` uses is the same as the provided `domain_cls` for this factory
-            if schema_cls.domain_cls() is not domain_cls:
-                raise FactoryError(
-                    f"Failed to define '{class_name}' : Schema domain type '{schema_cls.domain_cls().__name__}' doesn't match provided domain type '{domain_cls.__name__}'"
                 )
 
             # The `schema_cls` is valid, so create an instance of it
@@ -119,7 +115,14 @@ class JSONToDomainFactoryMetaClass(_FactoryMetaClass):  # type: ignore[misc]
         new_factory_cls = super().__new__(mcs, class_name, bases, attrs)
 
         # Verify that the factory can create the defined model, json and domain forms
-        validate_factory(new_factory_cls)
+        result = validate_factory(new_factory_cls)
+
+        # Make sure that the `domain_cls` that `schema_cls` uses is the same as the provided `domain_cls` for this factory
+        assert isinstance(result, JSONToDomainFactoryResult)
+        if has_domain_cls(domain_cls) and not isinstance(result.domain, domain_cls):
+            raise FactoryError(
+                f"Failed to define '{class_name}' : Schema domain type '{result.domain.__class__.__name__}' doesn't match provided domain type '{domain_cls.__name__}'"
+            )
 
         return new_factory_cls  # type: ignore[no-any-return]
 

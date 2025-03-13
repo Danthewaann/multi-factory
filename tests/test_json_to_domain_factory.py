@@ -9,7 +9,6 @@ from tests import common
 
 from marshmallow import Schema, fields, post_load
 from multi_factory import (
-    Factory,
     errors,
     JSONToDomainFactory,
     JSONToDomainFactoryResult,
@@ -32,10 +31,6 @@ def json_to_domain_factory_result(
 
 class BaseSchema(Schema):
     _domain_cls: type
-
-    @classmethod
-    def domain_cls(cls) -> type:
-        return cls._domain_cls
 
     @post_load
     def to_domain(self, incoming_data: dict[str, Any], **kwargs: Any) -> Any:
@@ -255,25 +250,33 @@ def test_json_to_domain_factory_with_no_enum_conversion_map_defaults_to_name() -
     )
 
 
-def test_raises_when_json_to_domain_factory_data_does_match_model() -> None:
-    with pytest.raises(
-        errors.FactoryError,
-        match=r"Failed to define '_InvalidFactory' : Failed to create Model object : ChildDomain.__init__\(\) got an unexpected keyword argument 'other_name'",
-    ):
-        # `other_name` is not valid property for the `ChildDomain` base model
-        class _InvalidFactory(Factory[common.ChildDomain]):
-            other_name = "Billy"
-
-
 def test_raises_when_json_to_domain_factory_domain_type_does_not_match_schema_domain_type() -> (
     None
 ):
     with pytest.raises(
         errors.FactoryError,
-        match="Failed to define '_InvalidFactory' : Schema domain type 'ParentDomain' doesn't match provided domain type 'ChildDomain'",
+        match=r"Failed to define '_InvalidFactory' : Failed to create Domain object : ParentDomain.__init__\(\) missing 1 required positional argument: 'children'",
     ):
-        # `ChildSchema` is not the same as `ParentSchema._domain_cls`
+        # `ChildDomain` is not the same as the domain result that `ParentSchema` returns
         class _InvalidFactory(JSONToDomainFactory[common.ChildDomain, ParentSchema]):
+            first_name = "Billy"
+            second_name = "Jim"
+
+
+def test_raises_when_json_to_domain_factory_domain_type_does_not_match_schema_domain_result_type() -> (
+    None
+):
+    @dataclass
+    class ChildDomain2:
+        first_name: str
+        second_name: str
+
+    with pytest.raises(
+        errors.FactoryError,
+        match="Failed to define '_InvalidFactory' : Schema domain type 'ChildDomain' doesn't match provided domain type 'ChildDomain2'",
+    ):
+        # `ChildSchema` does not return the same domain result type as `ChildDomain2`
+        class _InvalidFactory(JSONToDomainFactory[ChildDomain2, ChildSchema]):
             first_name = "Billy"
             second_name = "Jim"
 
