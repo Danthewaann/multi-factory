@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "multi-factory"
 version = "0.1.0"
-description = ""
+description = "Define a single factory to generate the same data in multiple formats"
 authors = ["Danthewaann <danielcrblack@gmail.com>"]
 license = "MIT"
 readme = "README.md"
