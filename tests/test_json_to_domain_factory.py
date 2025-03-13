@@ -296,6 +296,24 @@ def test_json_to_domain_factory_with_no_enum_conversion_map_defaults_to_name() -
     )
 
 
+def test_raises_when_json_to_domain_factory_with_list_of_sub_factories_without_base() -> (
+    None
+):
+    class _SubFactory(JSONToDomainFactory[common.ChildDomain, ChildSchema]):
+        first_name = "Billy"
+        second_name = "Jim"
+
+    with pytest.raises(
+        errors.FactoryError,
+        match=r"Failed to define '_InvalidFactory' : Schema failed to serialise to JSON : Must use 'base' property when instantiating a list of sub factories inside a factory declaration e.g sub_factories = \[SubFactory\(\).base\]",
+    ):
+
+        class _InvalidFactory(JSONToDomainFactory[common.ParentDomain, ParentSchema]):
+            first_name = "Jim"
+            second_name = "Jim"
+            children = [_SubFactory()]
+
+
 def test_raises_when_json_to_domain_factory_domain_type_does_not_match_schema_domain_type() -> (
     None
 ):

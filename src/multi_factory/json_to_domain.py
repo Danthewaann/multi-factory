@@ -183,6 +183,10 @@ class JSONToDomainFactory(
         Raises:
             TypeError: if we fail to convert `value`
         """
+        if isinstance(value, JSONToDomainFactoryResult):
+            raise TypeError(
+                "Must use 'base' property when instantiating a list of sub factories inside a factory declaration e.g sub_factories = [SubFactory().base]"
+            )
         if isinstance(value, (datetime.date, datetime.datetime)):
             return value.isoformat()
         if isinstance(value, UUID):
