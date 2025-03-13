@@ -1,21 +1,41 @@
 [tool.poetry]
-name = "multi-factories"
+name = "multi-factory"
 version = "0.1.0"
 description = ""
 authors = ["Danthewaann <danielcrblack@gmail.com>"]
+license = "MIT"
 readme = "README.md"
+homepage = "https://github.com/Danthewaann/multi-factory"
+repository = "https://github.com/Danthewaann/multi-factory"
+keywords = ["python", "factory", "multiple", "testing", "fixtures", "marshmallow"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux"
+]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
 marshmallow = "^3.23.0"
 factory-boy = "^3.3.1"
-sqlalchemy = "^2.0.36"
-
-[tool.pytest.ini_options]
-addopts = "-vvv -s"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.3.3"
+mypy = "^1.7.0"
+
+[tool.mypy]
+strict = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+# Ignore imports of the following packages as they don't
+# contain a `py.typed` marker file or stubs to tell mypy that they are type hinted
+ignore_missing_imports = true
+module = [
+    "factory.*",
+]
 
 [build-system]
 requires = ["poetry-core"]
