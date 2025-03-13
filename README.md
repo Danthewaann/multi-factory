@@ -33,6 +33,16 @@ class Gender(Enum):
     OTHER = 3
 
 
+@dataclass
+class User:
+    id: UUID
+    first_name: str
+    last_name: str
+    age: int
+    birthday: datetime
+    gender: Gender
+
+
 class UserSchema(Schema):
     id = fields.UUID()
     first_name = fields.String()
@@ -44,16 +54,6 @@ class UserSchema(Schema):
     @post_load
     def to_domain(self, incoming_data: dict[str, Any], **kwargs: Any) -> User:
         return User(**incoming_data)
-
-
-@dataclass
-class User:
-    id: UUID
-    first_name: str
-    last_name: str
-    age: int
-    birthday: datetime
-    gender: Gender
 ```
 
 The above code will be used in a `POST /users` HTTP API endpoint, where the request body will contain a `JSON` representation of the `User` class that will need
@@ -133,27 +133,27 @@ When you invoke this `UserFactory` you will have access to the 3 different forma
 >>> result
 JSONToDomainFactoryResult(
     base={
-        'id': UUID('96a43fc4-069a-4882-a388-24033299496f'), 
-        'first_name': 'Bob', 
-        'last_name': 'Dylan', 
-        'age': 21, 
-        'birthday': datetime.datetime(2000, 1, 1, 0, 0), 
+        'id': UUID('96a43fc4-069a-4882-a388-24033299496f'),
+        'first_name': 'Bob',
+        'last_name': 'Dylan',
+        'age': 21,
+        'birthday': datetime.datetime(2000, 1, 1, 0, 0),
         'gender': <Gender.MALE: 1>
-    }, 
+    },
     json={
-        'id': '96a43fc4-069a-4882-a388-24033299496f', 
-        'first_name': 'Bob', 
-        'last_name': 'Dylan', 
-        'age': 21, 
-        'birthday': '2000-01-01T00:00:00', 
+        'id': '96a43fc4-069a-4882-a388-24033299496f',
+        'first_name': 'Bob',
+        'last_name': 'Dylan',
+        'age': 21,
+        'birthday': '2000-01-01T00:00:00',
         'gender': 'MALE'
-    }, 
+    },
     domain=User(
-        id=UUID('96a43fc4-069a-4882-a388-24033299496f'), 
-        first_name='Bob', 
-        last_name='Dylan', 
-        age=21, 
-        birthday=datetime.datetime(2000, 1, 1, 0, 0), 
+        id=UUID('96a43fc4-069a-4882-a388-24033299496f'),
+        first_name='Bob',
+        last_name='Dylan',
+        age=21,
+        birthday=datetime.datetime(2000, 1, 1, 0, 0),
         gender=<Gender.MALE: 1>
     )
 )
