@@ -4,38 +4,21 @@ from typing import Any, Callable
 
 import pytest
 
+from multi_factory.utils import lazy_attribute
 from tests import common
 
-from marshmallow import fields
+from marshmallow import Schema, fields, post_load
 from multi_factory import (
     Factory,
     errors,
     JSONToDomainFactory,
     JSONToDomainFactoryResult,
 )
-from tests.common import inject_factory_method
-
-
-@pytest.fixture
-def child_dict() -> dict[str, Any]:
-    return {"first_name": "Billy", "second_name": "Jim"}
-
-
-@pytest.fixture
-def parent_dict(child_dict: dict[str, Any]) -> dict[str, Any]:
-    return {"first_name": "Jim", "second_name": "Jim", "children": [child_dict]}
-
-
-@pytest.fixture
-def child_domain() -> common.ChildDomain:
-    return common.ChildDomain(first_name="Billy", second_name="Jim")
-
-
-@pytest.fixture
-def parent_domain(child_domain: common.ChildDomain) -> common.ParentDomain:
-    return common.ParentDomain(
-        first_name="Jim", second_name="Jim", children=[child_domain]
-    )
+from tests.common import (
+    ChildDomain,
+    ParentDomain,
+    inject_factory_method,
+)
 
 
 @pytest.fixture
@@ -47,7 +30,45 @@ def json_to_domain_factory_result(
     )
 
 
-@inject_factory_method(common.ParentJSONToDomainFactory)
+class BaseSchema(Schema):
+    _domain_cls: type
+
+    @classmethod
+    def domain_cls(cls) -> type:
+        return cls._domain_cls
+
+    @post_load
+    def to_domain(self, incoming_data: dict[str, Any], **kwargs: Any) -> Any:
+        return self._domain_cls(**incoming_data)
+
+
+class ChildSchema(BaseSchema):
+    _domain_cls = ChildDomain
+
+    first_name = fields.String(required=True)
+    second_name = fields.String(required=True)
+
+
+class ParentSchema(BaseSchema):
+    _domain_cls = ParentDomain
+
+    first_name = fields.String()
+    second_name = fields.String()
+    children = fields.Nested(ChildSchema, many=True)
+
+
+class ChildJSONToDomainFactory(JSONToDomainFactory[ChildDomain, ChildSchema]):
+    first_name = "Billy"
+    second_name = "Jim"
+
+
+class ParentJSONToDomainFactory(JSONToDomainFactory[ParentDomain, ParentSchema]):
+    first_name = "Jim"
+    second_name = "Jim"
+    children = lazy_attribute(lambda: [ChildJSONToDomainFactory.build().base])
+
+
+@inject_factory_method(ParentJSONToDomainFactory)
 def test_json_to_domain_factory(
     factory_method: Callable[..., JSONToDomainFactoryResult[common.ParentDomain]],
     json_to_domain_factory_result: JSONToDomainFactoryResult[common.ParentDomain],
@@ -56,16 +77,7 @@ def test_json_to_domain_factory(
     assert model == json_to_domain_factory_result
 
 
-@inject_factory_method(common.ParentFactory)
-def test_factory(
-    factory_method: Callable[..., common.ParentDomain],
-    parent_domain: common.ParentDomain,
-) -> None:
-    model = factory_method()
-    assert model == parent_domain
-
-
-@inject_factory_method(common.ParentJSONToDomainFactory, batch=True)
+@inject_factory_method(ParentJSONToDomainFactory, batch=True)
 def test_json_to_domain_factory_batch(
     factory_method: Callable[..., list[JSONToDomainFactoryResult[common.ParentDomain]]],
     json_to_domain_factory_result: JSONToDomainFactoryResult[common.ParentDomain],
@@ -74,82 +86,12 @@ def test_json_to_domain_factory_batch(
     assert models == [json_to_domain_factory_result]
 
 
-@inject_factory_method(common.ParentFactory, batch=True)
-def test_factory_batch(
-    factory_method: Callable[..., list[common.ParentDomain]],
-    parent_domain: common.ParentDomain,
-) -> None:
-    models = factory_method(size=1)
-    assert models == [parent_domain]
-
-
-def test_factory_excludes(child_domain: common.ChildDomain) -> None:
-    # `other_field` shouldn't get used when creating the model or domain object for this factory
-    class _ExcludesFactory(Factory[common.ChildDomain], exclude="other_field"):
-        first_name = "Billy"
-        second_name = "Jim"
-        other_field = "Bob"
-
-    assert _ExcludesFactory() == child_domain
-
-
-def test_factory_excludes_merges_with_superclass(
-    child_domain: common.ChildDomain,
-) -> None:
-    # `other_field` shouldn't get used when creating the model or domain object for this factory
-    class _ExcludesFactory(Factory[common.ChildDomain], exclude="another_field"):
-        first_name = "Billy"
-        second_name = "Jim"
-        another_field = "Bob"
-
-    # `other_field` shouldn't get used when creating the model or domain object for this factory
-    class _ExcludesDerivedFactory(_ExcludesFactory, exclude="other_field"):
-        other_field = "Bob"
-
-    assert _ExcludesDerivedFactory() == child_domain
-
-
-def test_factory_excludes_in_meta_inner_class(child_domain: common.ChildDomain) -> None:
-    # `other_field` shouldn't get used when creating the model or domain object for this factory
-    class _ExcludesFactory(Factory[common.ChildDomain]):
-        class Meta:
-            exclude = ("other_field",)
-
-        first_name = "Billy"
-        second_name = "Jim"
-        other_field = "Bob"
-
-    assert _ExcludesFactory() == child_domain
-
-
-def test_factory_excludes_in_meta_inner_class_merges_with_superclass(
-    child_domain: common.ChildDomain,
-) -> None:
-    # `another_field` shouldn't get used when creating the model or domain object for this factory
-    class _ExcludesFactory(Factory[common.ChildDomain]):
-        class Meta:
-            exclude = ("another_field",)
-
-        first_name = "Billy"
-        second_name = "Jim"
-        another_field = "Bob"
-
-    # `other_field` shouldn't get used when creating the model or domain object for this factory
-    class _ExcludesDerivedFactory(_ExcludesFactory):
-        class Meta:
-            exclude = ("other_field",)
-
-        other_field = "Bob"
-
-    assert _ExcludesDerivedFactory() == child_domain
-
-
 def test_json_to_domain_factory_excludes(
     child_dict: dict[str, Any], child_domain: common.ChildDomain
 ) -> None:
     # `other_field` shouldn't get used when creating the model or domain object for this factory
     class _ExcludesFactory(
-        JSONToDomainFactory[common.ChildDomain, common.ChildSchema],
+        JSONToDomainFactory[common.ChildDomain, ChildSchema],
         exclude="other_field",
     ):
         first_name = "Billy"
@@ -166,7 +108,7 @@ def test_json_to_domain_factory_excludes_merges_with_superclass(
 ) -> None:
     # `another_field` shouldn't get used when creating the model or domain object for this factory
     class _ExcludesFactory(
-        JSONToDomainFactory[common.ChildDomain, common.ChildSchema],
+        JSONToDomainFactory[common.ChildDomain, ChildSchema],
         exclude="another_field",
     ):
         first_name = "Billy"
@@ -186,7 +128,7 @@ def test_json_to_domain_factory_excludes_in_meta_inner_class(
     child_dict: dict[str, Any], child_domain: common.ChildDomain
 ) -> None:
     # `other_field` shouldn't get used when creating the model or domain object for this factory
-    class _ExcludesFactory(JSONToDomainFactory[common.ChildDomain, common.ChildSchema]):
+    class _ExcludesFactory(JSONToDomainFactory[common.ChildDomain, ChildSchema]):
         class Meta:
             exclude = ("other_field",)
 
@@ -203,7 +145,7 @@ def test_json_to_domain_factory_excludes_in_meta_inner_class_merges_with_supercl
     child_dict: dict[str, Any], child_domain: common.ChildDomain
 ) -> None:
     # `another_field` shouldn't get used when creating the model or domain object for this factory
-    class _ExcludesFactory(JSONToDomainFactory[common.ChildDomain, common.ChildSchema]):
+    class _ExcludesFactory(JSONToDomainFactory[common.ChildDomain, ChildSchema]):
         class Meta:
             exclude = ("another_field",)
 
@@ -231,7 +173,7 @@ def test_json_to_domain_factory_enum_conversion_map() -> None:
     class _TempDomain:
         first: _TempEnum
 
-    class _TempSchema(common.BaseSchema):
+    class _TempSchema(BaseSchema):
         _domain_cls = _TempDomain
         first = fields.Enum(_TempEnum)
 
@@ -262,7 +204,7 @@ def test_json_to_domain_factory_enum_conversion_map_merges_with_superclass() -> 
         first: _TempEnum
         second: _TempEnum2
 
-    class _TempSchema(common.BaseSchema):
+    class _TempSchema(BaseSchema):
         _domain_cls = _TempDomain
         first = fields.Enum(_TempEnum)
         second = fields.Enum(_TempEnum2)
@@ -297,7 +239,7 @@ def test_json_to_domain_factory_with_no_enum_conversion_map_defaults_to_name() -
     class _TempDomain:
         first: _TempEnum
 
-    class _TempSchema(common.BaseSchema):
+    class _TempSchema(BaseSchema):
         _domain_cls = _TempDomain
         first = fields.Enum(_TempEnum)
 
@@ -331,9 +273,7 @@ def test_raises_when_json_to_domain_factory_domain_type_does_not_match_schema_do
         match="Failed to define '_InvalidFactory' : Schema domain type 'ParentDomain' doesn't match provided domain type 'ChildDomain'",
     ):
         # `ChildSchema` is not the same as `ParentSchema._domain_cls`
-        class _InvalidFactory(
-            JSONToDomainFactory[common.ChildDomain, common.ParentSchema]
-        ):
+        class _InvalidFactory(JSONToDomainFactory[common.ChildDomain, ParentSchema]):
             first_name = "Billy"
             second_name = "Jim"
 
@@ -344,9 +284,7 @@ def test_raises_when_json_to_domain_factory_data_fails_schema_validation() -> No
         match=r"Failed to define '_InvalidFactory' : Schema failed to validate data : {'first_name': \['Missing data for required field.'\]}",
     ):
         # `first_name` is not defined on the factory, so schema validation will fail
-        class _InvalidFactory(
-            JSONToDomainFactory[common.ChildDomain, common.ChildSchema]
-        ):
+        class _InvalidFactory(JSONToDomainFactory[common.ChildDomain, ChildSchema]):
             second_name = "Jim"
 
 
@@ -355,7 +293,7 @@ def test_raises_when_json_to_domain_factory_data_does_not_match_domain() -> None
     class _TempDomain:
         first_name: str
 
-    class _TempSchema(common.BaseSchema):
+    class _TempSchema(BaseSchema):
         _domain_cls = _TempDomain
         first_name = fields.String()
         second_name = fields.String()
